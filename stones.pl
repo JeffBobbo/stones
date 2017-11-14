@@ -2,7 +2,7 @@
  * coursework yo
  *
  * So we have a little game where there's N piles of stones, of any quantity.
- * Two players take it in turns to take a number of stones form a pile, 
+ * Two players take it in turns to take a number of stones from a pile, 
  * or an equal number of stones from two piles. The player to pick up the last
  * stone is the loser
  */
@@ -10,13 +10,6 @@
 /**
  * initial test case: 3 piles of 3, 2, and 1 stones respectively
  */
-
-% prints elements in a list
-print_state([]).
-print_state([P|S]) :-
-  write(P),
-  nl,
-  print_state(S).
 
 list_popfront([X|Tail], X, Tail).
 list_pushfront(X, L, [X|L]).
@@ -34,13 +27,53 @@ list_pushfront(X, L, [X|L]).
  *     [3, 1], % second and third heap (1)
  *   ]
  */
-rempve([F|O], O, N):-
-  N = F.
-remove([F|O], [NF|O], N) :-
-  N < F,
-  NF is F-N.
-remove([F|O], [F|NO], N) :-
-  remove(O, NO, N).
+% removing from an empty list just gives an empty list
+remove([], []).
+% removes N from Head
+remove([Head|Tail], [Head1|Tail1], N) :-
+  Head >= N,
+  Head1 = Head - N,
+  remove(Tail, Tail1).
+
+%remove().
+
+/*
+remove_n2([H|T], L1, X) :-
+  proper_length(T, L),
+  L > 0,
+  L2 is T,
+  remove_n(L2, L1, X),
+  remove_n(L2).
+*/
+
+/*
+move(S1, S2) :-
+  proper_length(S1, L),
+  move(S1, S2, L).
+move(S1, S2, P) :-
+  P > 0,
+  nth1(P, S1, H),
+  between(1, H, E),
+  (
+    remove(S1, S2, E),
+    print(S2),
+    nl
+  );
+  P1 is P-1,
+  move(S1, S2, P1).
+*/
+
+move([F|O], [F, NO]) :-
+  move(O, NO).
+move(F, NO) :-
+  between(0, F, X),
+  (
+    NF is F - X,
+    NF > 0 -->
+      Result = [NF|NO];
+      Result = NO
+  );
+  fail.
 
 take_all(S, S1) :-
   list_popfront(S, _, S1).
@@ -64,4 +97,7 @@ take_some(S, S2) :-
  */
 % base case - having a single stone means losing
 win([1]) :- false.
-
+% recursively test
+win(S) :-
+  move(S, S1),
+  not(win(S1)).
