@@ -37,6 +37,16 @@ remove([Head|Tail], [Head1|Tail1], N) :-
 
 %remove().
 
+move([_|O], O).
+move([F|O],[NF|O]) :-
+  between(1, F, X),
+    NF is F - X,
+    X < F.
+move([F, O], [F, NO]) :-
+  move(O, NO).
+
+%remove_s([F|O],[F|NO],X) :-
+
 /*
 remove_n2([H|T], L1, X) :-
   proper_length(T, L),
