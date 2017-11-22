@@ -30,20 +30,19 @@ list_pushfront(X, L, [X|L]).
 % removing from an empty list just gives an empty list
 remove([], []).
 % removes N from Head
-remove([Head|Tail], [Head1|Tail1], N) :-
+remove([Head|Tail], [NewHead|NewTail], N) :-
   Head >= N,
-  Head1 = Head - N,
-  remove(Tail, Tail1).
-
+  NewHead = Head - N,
+  remove(Tail, NewTail).
 %remove().
 
-move([_|O], O).
-move([F|O],[NF|O]) :-
-  between(1, F, X),
-    NF is F - X,
-    X < F.
-move([F, O], [F, NO]) :-
-  move(O, NO).
+move([_|Tail], Tail).
+move([Head|Tail],[NF|Tail]) :-
+  between(1, Head, X),
+    NF is Head - X,
+    X < Head.
+move([Head, Tail], [Head, NO]) :-
+  move(Tail, NO).
 
 %remove_s([F|O],[F|NO],X) :-
 
@@ -73,6 +72,7 @@ move(S1, S2, P) :-
   move(S1, S2, P1).
 */
 
+/*
 move([F|O], [F, NO]) :-
   move(O, NO).
 move(F, NO) :-
@@ -84,6 +84,7 @@ move(F, NO) :-
       Result = NO
   );
   fail.
+*/
 
 take_all(S, S1) :-
   list_popfront(S, _, S1).
