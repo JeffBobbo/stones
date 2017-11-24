@@ -8,13 +8,6 @@
  */
 
 /**
- * initial test case: 3 piles of 3, 2, and 1 stones respectively
- */
-
-list_popfront([X|Tail], X, Tail).
-list_pushfront(X, L, [X|L]).
-
-/**
  * Question 1
  * Produce all possible states, S2, from the current state, S1
  * e.g., for state S1 = [3, 2, 1]
@@ -27,22 +20,60 @@ list_pushfront(X, L, [X|L]).
  *     [3, 1], % second and third heap (1)
  *   ]
  */
-% removing from an empty list just gives an empty list
-remove([], []).
-% removes N from Head
-remove([Head|Tail], [NewHead|NewTail], N) :-
-  Head >= N,
-  NewHead = Head - N,
-  remove(Tail, NewTail).
-%remove().
+% remove first element from the list, unifying with N
+remove([N|Tail], Tail, N).
+% removes N from Head, Head==N, do the one above
+remove([Head|Tail], [NewHead|Tail], N) :-
+  Head > N,
+  NewHead is Head - N.
+% removes N from each pile that can have N removed
+remove([Head|Tail], [Head|NewTail], N) :-
+  remove(Tail, NewTail, N).
 
-move([_|Tail], Tail).
+% removes 1..N from Head
+remove_h([Head|Tail], [NewHead|Tail]) :-
+  N is Head - 1,
+  between(1, N, I),
+  (
+    NewHead is Head - I;
+    fail
+  ).
+
+% remove _, because we don't care about it
+remove_h([_|Tail], Tail).
+
+move([Head|Tail], NewHead) :-
+  remove_h([Head|Tail], NewHead).
+
+move([Head|Tail], Play) :-
+  between(1, Head, I),
+  (
+    NewHead is Head - I,
+    remove(Tail, NewTail, I),
+    (
+      NewHead > 0 ->
+        Play = [NewHead | NewTail]
+      ;
+        Play = NewTail
+    )
+    ;
+    fail
+  ).
+
+move([Head|Tail], [Head|NewTail]) :-
+  move(Tail, NewTail).
+
+
+/*
+move([Head|Tail], Play) :-
+  between()
 move([Head|Tail],[NF|Tail]) :-
   between(1, Head, X),
     NF is Head - X,
     X < Head.
 move([Head, Tail], [Head, NO]) :-
   move(Tail, NO).
+*/
 
 %remove_s([F|O],[F|NO],X) :-
 
@@ -106,9 +137,17 @@ take_some(S, S2) :-
  * Question 2
  * Return true if S is a winning position
  */
+% this is really slow, because it reevaluates
 % base case - having a single stone means losing
-win([1]) :- false.
+slowin([1]) :- false.
 % recursively test
-win(S) :-
+slowin(S) :-
   move(S, S1),
   not(win(S1)).
+
+/**
+ * Question 3
+ * A predicate, analyse(S), that determines if it's a win for the player if they're playing on state S.
+ */
+analyse(S) :-
+  slowin(S).
