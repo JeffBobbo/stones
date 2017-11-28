@@ -2,7 +2,7 @@
  * coursework yo
  *
  * So we have a little game where there's N piles of stones, of any quantity.
- * Two players take it in turns to take a number of stones from a pile, 
+ * Two players take it in turns to take a number of stones from a pile,
  * or an equal number of stones from two piles. The player to pick up the last
  * stone is the loser
  */
@@ -38,7 +38,6 @@ remove_h([Head|Tail], [NewHead|Tail]) :-
     NewHead is Head - I;
     fail
   ).
-
 % remove _, because we don't care about it
 remove_h([_|Tail], Tail).
 
@@ -64,75 +63,6 @@ move([Head|Tail], [Head|NewTail]) :-
   move(Tail, NewTail).
 
 
-/*
-move([Head|Tail], Play) :-
-  between()
-move([Head|Tail],[NF|Tail]) :-
-  between(1, Head, X),
-    NF is Head - X,
-    X < Head.
-move([Head, Tail], [Head, NO]) :-
-  move(Tail, NO).
-*/
-
-%remove_s([F|O],[F|NO],X) :-
-
-/*
-remove_n2([H|T], L1, X) :-
-  proper_length(T, L),
-  L > 0,
-  L2 is T,
-  remove_n(L2, L1, X),
-  remove_n(L2).
-*/
-
-/*
-move(S1, S2) :-
-  proper_length(S1, L),
-  move(S1, S2, L).
-move(S1, S2, P) :-
-  P > 0,
-  nth1(P, S1, H),
-  between(1, H, E),
-  (
-    remove(S1, S2, E),
-    print(S2),
-    nl
-  );
-  P1 is P-1,
-  move(S1, S2, P1).
-*/
-
-/*
-move([F|O], [F, NO]) :-
-  move(O, NO).
-move(F, NO) :-
-  between(0, F, X),
-  (
-    NF is F - X,
-    NF > 0 -->
-      Result = [NF|NO];
-      Result = NO
-  );
-  fail.
-*/
-
-take_all(S, S1) :-
-  list_popfront(S, _, S1).
-
-take_n([S|T], [T], N) :-
-  S = N.
-
-take_some_doit(S, N, S1) :-
-  list_pushfront(N, S, S1).
-take_some(S, S2) :-
-  list_popfront(S, E, S1),
-  E1 is E-1,
-  between(1, E1, X),
-  (
-    take_some_doit(S1, X, S2)
-  ).
-  
 /**
  * Question 2
  * Return true if S is a winning position
@@ -143,11 +73,59 @@ slowin([1]) :- false.
 % recursively test
 slowin(S) :-
   move(S, S1),
-  not(win(S1)).
+  not(slowin(S1)).
+
+:- dynamic iswin/2.
+reset :-
+  retractall(iswin(_, _)).
+
+% base cases
+% having no stones means you've won
+fastwin([]).
+% having a single stone means losing
+fastwin([1]) :- false,!.
+% recursively test again, but this time, assert iswin if it's a win
+% and don't back track
+fastwin(S) :-
+  forall(move(S, S1), fastwin_int(S, S1));
+  iswin(S, _).
+%  (
+%    not(iswin(S, S1)) ->
+%    (
+%      not(fastwin(S1)),
+%      assert(iswin(S, S1))
+%    )
+%  ));
+fastwin_int(S, S1) :-
+  not(iswin(S, S1)) ->
+  (
+    not(fastwin(S1)),
+    assert(iswin(S, S1))
+  ).
+win(S) :-
+  msort(S, Ss),
+  fastwin(Ss).
+
 
 /**
  * Question 3
  * A predicate, analyse(S), that determines if it's a win for the player if they're playing on state S.
  */
+analyse_move(S) :-
+  write(S),
+  nl,
+  fail;
+  true.
+
 analyse(S) :-
-  slowin(S).
+  % call win, this'll populate iswin
+  win(S), !,
+  (
+    forall(iswin(S, S1), (write(S1), nl))
+%    analyse_move(S)
+  );
+  (
+    print('There are no winning moves'),
+    nl,
+    fail
+  ).
