@@ -87,15 +87,15 @@ fastwin([1]) :- false,!.
 % recursively test again, but this time, assert iswin if it's a win
 % and don't back track
 fastwin(S) :-
-  forall(move(S, S1), fastwin_int(S, S1));
-  iswin(S, _).
-%  (
-%    not(iswin(S, S1)) ->
-%    (
-%      not(fastwin(S1)),
-%      assert(iswin(S, S1))
-%    )
-%  ));
+  msort(S, Ss),
+  forall(move(Ss, S1),
+  (
+    not(iswin(S, S1)) ->
+    (
+      not(fastwin(S1)),
+      assert(iswin(S, S1))
+    )
+  )).
 fastwin_int(S, S1) :-
   not(iswin(S, S1)) ->
   (
@@ -103,8 +103,7 @@ fastwin_int(S, S1) :-
     assert(iswin(S, S1))
   ).
 win(S) :-
-  msort(S, Ss),
-  fastwin(Ss).
+  fastwin(S).
 
 
 /**
@@ -119,13 +118,37 @@ analyse_move(S) :-
 
 analyse(S) :-
   % call win, this'll populate iswin
-  win(S), !,
+  msort(S, Ss),
+  win(Ss), !,
   (
-    forall(iswin(S, S1), (write(S1), nl))
-%    analyse_move(S)
+    forall(iswin(Ss, S1), %(write(S1), nl))
+    analyse_move(S1))
   );
   (
     print('There are no winning moves'),
     nl,
     fail
+  ).
+
+/**
+ * Question 4
+ * A predicate, analyseall(N), which calls analyse on every state of one or
+ * two heaps of up to size N.
+ * e.g., N = 3, [1], [2], [3], [1, 1], [1, 2], [1, 3], [2, 2], [2, 3], [3, 3]
+ */
+analyseall_internal(S) :-
+  write(S),
+  tab(4),
+  analyse(S),
+  nl.
+
+analyseall(N) :-
+  between(1, N, X),
+  (
+    between(X, N, Y),
+    (
+      S = [X|Y],
+      analyseall_internal(S)
+    ),
+    analyseall_internal([X])
   ).
