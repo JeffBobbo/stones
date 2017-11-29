@@ -1,4 +1,4 @@
-/**
+/*
  * coursework yo
  *
  * So we have a little game where there's N piles of stones, of any quantity.
@@ -7,7 +7,7 @@
  * stone is the loser
  */
 
-/**
+/*
  * Question 1
  * Produce all possible states, S2, from the current state, S1
  * e.g., for state S1 = [3, 2, 1]
@@ -63,104 +63,52 @@ move([Head|Tail], [Head|NewTail]) :-
   move(Tail, NewTail).
 
 
-/**
+/*
  * Question 2
  * Return true if S is a winning position
  */
-% this is really slow, because it reevaluates
-% base case - having a single stone means losing
-slowin([1]) :- false.
-% recursively test
-slowin(S) :-
-  move(S, S1),
-  not(slowin(S1)).
-
 :- dynamic iswin/2.
 reset :-
   retractall(iswin(_, _)).
 
-% base cases
-% having no stones means you've won
-fastwin([]).
-% having a single stone means losing
-fastwin([1]) :- false,!.
-% recursively test again, but this time, assert iswin if it's a win
-% and don't back track
-/*
-fastwin(S) :-
-  msort(S, Ss),
-  forall(move(Ss, S1),
-  (
-    not(iswin(S, S1)) ->
-    (
-      not(fastwin(S1)),
-      assert(iswin(S, S1))
-    )
-  )).
-fastwin_int(S, S1) :-
-  not(iswin(S, S1)) ->
-  (
-    not(fastwin(S1)),
-    assert(iswin(S, S1))
-  ).
-*/
-fastwin([]).
-fastwin([1]) :- fail,!.
-fastwin(S) :-
-  msort(S, Ss),
-  (
-    iswin(Ss, _) ->
-    (
-      true
-    )
-    ;
-    (
-      move(Ss, S1),
-%      write('Evaluating: '),
-%      write(Ss),
-%      write(' -> '),
-%      write(S1),
-%      nl,
-      not(fastwin(S1)),
-      assert(iswin(Ss, S1))
-%       findall(Sn, move(Ss, Sn), Moves),
-%       fastwin_int(Ss, Moves)
-    )
-  ).
 
-fastwin_int(_, []) :- fail ; true.
-fastwin_int(S, [Sn|States]) :-
-  not(fastwin(Sn)),
-  assert(iswin(S, Sn)),
-  fastwin_int(S, States).
-
-buildwin(S) :-
-  msort(S, Ss),
+% base case, having 0 at the start of your turn means you've won
+test([]).
+% base case, having 1 at the start of your turn means you've lost
+test([1]) :- fail,!.
+% test if this is a win, using either the dynamic iswin predicate or
+% recursively testing.
+test(S) :-
+  msort(S, Ss), % sort them
+  move(Ss, Sn), % make a move
+  msort(Sn, Sns), % sort the move
   (
-    iswin(Ss, _) ->
-    (
+    iswin(Ss, Sns) ->
+      % if the move has already been worked out, fail, otherwise, do stuff
       true
-    )
     ;
-    (
-      move(Ss, S1),
-      not(win(S1)),
-      assert(iswin(Ss, S1))
-    )
-  ),
+      not(test(Sns)),
+      assert(iswin(Ss, Sns))
+  ).
+% failure driven loop to build the entire tree of winning possibilities
+% from a given state, S.
+build(S) :-
+  test(S),
   fail.
+build(_) :-
+ true.
 
-win([]).
-win([1]) :- fail,!.
+% sort the given state, build the win-tree and just return true if there's
+% any winning move to make
 win(S) :-
-  %buildwin(S);
-  %iswin(S, _).
-  fastwin(S).
+  msort(S, Ss),
+  build(Ss),
+  iswin(Ss, _),!.
 
-
-/**
+/*
  * Question 3
- * A predicate, analyse(S), that determines if it's a win for the player if they're playing on state S.
+ * A predicate, analyse(S), that determines if it's a win for the player
+ * and which moves they can play
  */
 analyse_move(S) :-
   write(S),
@@ -182,31 +130,41 @@ analyse(S) :-
     fail
   ).
 
-/**
+/*
  * Question 4
  * A predicate, analyseall(N), which calls analyse on every state of one or
  * two heaps of up to size N.
  * e.g., N = 3, [1], [2], [3], [1, 1], [1, 2], [1, 3], [2, 2], [2, 3], [3, 3]
  */
-analyseall_internal(S) :-
+% writes out one line, e.g.,
+% S = [2, 3], L = [[1], [2, 2]] becomes
+% [2,3]:  [[1],[2,2]]
+analyseall_internal(S, L) :-
   write(S),
-  tab(4),
-  analyse(S),
+  write(':\t'),
+  (
+    L \= [] ->
+      write(L)
+    ;
+      write('no winning moves.')
+  ),
   nl.
 
 analyseall(N) :-
-  between(1, N, X),
+  between(1, N, X), % for the first pile
   (
-    between(X, N, Y),
+    findall(Sn, iswin([X], Sn), L), % find all winning moves
+    analyseall_internal([X], L); % write them all
+    between(X, N, Y), % the second pile, start from X so no repeats
     (
       S = [X,Y],
-      analyseall_internal(S)
-    ),
-    analyseall_internal([X])
-  ).
+      findall(Sn, iswin(S, Sn), L), % same as above
+      analyseall_internal(S, L)
+    )
+  ),fail,!. % force backtracking, so no interaction required
 
 
-/**
+/*
  * Question 5
  * A play predicate, play, to play a game. One player is the user, the other is the computer
  */
@@ -218,9 +176,10 @@ player_turn(Sin, Sout) :-
   write('Current state: '),
   write(Sin),
   write('\nPossible moves: '),
-  findall(M, move(Sin, M), Moves),
-  write(Moves),
-  write('\nEnter state after move\n> '),
+  findall(Ms, (move(Sin, M), msort(M, Ms)), Movs),
+  sort(Movs, Moves), % sort moves so that we get consistent output
+  write(Moves), % also take advantage that sort removes duplicates
+  write('\nEnter state after move:\n'),
   read(Sout),
   move(Sin,Sout), !.
 player_turn(Sin, Sout) :-
@@ -262,7 +221,5 @@ do_play(S, P) :-
   ).
 
 play(S) :-
-  win(S),!,
-  do_play(S, 1).
-play(S) :-
+  build(S),
   do_play(S, 1).
