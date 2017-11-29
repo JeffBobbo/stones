@@ -1,13 +1,4 @@
 /*
- * coursework yo
- *
- * So we have a little game where there's N piles of stones, of any quantity.
- * Two players take it in turns to take a number of stones from a pile,
- * or an equal number of stones from two piles. The player to pick up the last
- * stone is the loser
- */
-
-/*
  * Question 1
  * Produce all possible states, S2, from the current state, S1
  * e.g., for state S1 = [3, 2, 1]
@@ -19,6 +10,9 @@
  *     [2, 2], % first and third heap (1)
  *     [3, 1], % second and third heap (1)
  *   ]
+ *
+ * Some credit should be given to Ashley Scopes for Q1, comments on it and the
+ * rest of the assignment is my own work.
  */
 % remove first element from the list, unifying with N
 remove([N|Tail], Tail, N).
@@ -38,9 +32,10 @@ remove_h([Head|Tail], [NewHead|Tail]) :-
     NewHead is Head - I;
     fail
   ).
-% remove _, because we don't care about it
+% removes the head, aka taking the entire pile
 remove_h([_|Tail], Tail).
 
+% make a move by removing the first pile
 move([Head|Tail], NewHead) :-
   remove_h([Head|Tail], NewHead).
 
@@ -68,9 +63,9 @@ move([Head|Tail], [Head|NewTail]) :-
  * Return true if S is a winning position
  */
 :- dynamic iswin/2.
+% resets the dynamic predicate, for ease of testing
 reset :-
   retractall(iswin(_, _)).
-
 
 % base case, having 0 at the start of your turn means you've won
 test([]).
@@ -172,6 +167,10 @@ analyseall(N) :-
 % what the end state is. It's checked against iswin, which if fails will
 % redo on the second predicate, which just recursively calls back again to
 % reprompt the user for correct input.
+player_input(States, Sout) :-
+  read(Sout),
+  member(Sout, States).
+
 player_turn(Sin, Sout) :-
   write('Current state: '),
   write(Sin),
@@ -179,8 +178,8 @@ player_turn(Sin, Sout) :-
   findall(Ms, (move(Sin, M), msort(M, Ms)), Movs),
   sort(Movs, Moves), % sort moves so that we get consistent output
   write(Moves), % also take advantage that sort removes duplicates
-  write('\nEnter state after move:\n'),
-  read(Sout),
+  write('\nEnter state after move (or use "^C . RETURN a" to quit):\n'),
+  catch(player_input(Moves, Sout), _, fail),
   move(Sin,Sout), !.
 player_turn(Sin, Sout) :-
   write('Invalid play, please try again.\n'),
